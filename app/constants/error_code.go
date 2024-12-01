@@ -18,3 +18,8 @@ func (e *ErrorCode) GetMessage() string {
 func (e *ErrorCode) GetCode() int {
 	return e.Code
 }
+
+func (e *ErrorCode) WithMessage(message string) *ErrorCode {
+	e.Message = message
+	return e
+}

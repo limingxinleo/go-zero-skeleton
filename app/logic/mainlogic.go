@@ -23,10 +23,7 @@ func NewMainLogic(ctx context.Context, svcCtx *svc.ServiceContext) *MainLogic {
 	}
 }
 
-func (l *MainLogic) Main(req *types.FromRequest) (resp *types.Response[string], err kernel.ErrorCodeInterface) {
-	resp = &types.Response[string]{
-		Data: req.Name,
-	}
-
+func (l *MainLogic) Main(req *types.FromRequest) (result string, err kernel.ErrorCodeInterface) {
+	result = req.Name
 	return
 }
