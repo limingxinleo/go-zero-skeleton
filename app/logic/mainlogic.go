@@ -2,8 +2,9 @@ package logic
 
 import (
 	"context"
-	"main/internal/svc"
-	"main/internal/types"
+	"main/app/kernel/http"
+	"main/app/svc"
+	"main/app/types"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -22,9 +23,10 @@ func NewMainLogic(ctx context.Context, svcCtx *svc.ServiceContext) *MainLogic {
 	}
 }
 
-func (l *MainLogic) Main(req *types.FromRequest) (resp *types.Response[string], err error) {
+func (l *MainLogic) Main(req *types.FromRequest) (resp *types.Response[string], err http.ErrorCodeInterface) {
 	resp = &types.Response[string]{
 		Data: req.Name,
 	}
+
 	return
 }

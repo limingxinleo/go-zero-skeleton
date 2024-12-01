@@ -1,7 +1,7 @@
 package svc
 
 import (
-	"main/internal/config"
+	"main/app/config"
 )
 
 type ServiceContext struct {
