@@ -17,7 +17,7 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			{
 				Method:  http.MethodGet,
 				Path:    "/",
-				Handler: MainHandler(serverCtx),
+				Handler: IndexHandler(serverCtx),
 			},
 		},
 	)

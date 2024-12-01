@@ -9,21 +9,21 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-type MainLogic struct {
+type IndexService struct {
 	logx.Logger
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
 }
 
-func NewMainLogic(ctx context.Context, svcCtx *svc.ServiceContext) *MainLogic {
-	return &MainLogic{
+func NewMainLogic(ctx context.Context, svcCtx *svc.ServiceContext) *IndexService {
+	return &IndexService{
 		Logger: logx.WithContext(ctx),
 		ctx:    ctx,
 		svcCtx: svcCtx,
 	}
 }
 
-func (l *MainLogic) Main(req *types.FromRequest) (result string, err kernel.ErrorCodeInterface) {
+func (l *IndexService) Index(req *types.FromRequest) (result string, err kernel.ErrorCodeInterface) {
 	result = req.Name
 	return
 }

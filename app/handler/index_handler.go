@@ -10,7 +10,7 @@ import (
 	"main/app/types"
 )
 
-func MainHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+func IndexHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.FromRequest
 		if err := httpx.Parse(r, &req); err != nil {
@@ -19,7 +19,7 @@ func MainHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		}
 
 		l := logic.NewMainLogic(r.Context(), svcCtx)
-		resp, err := l.Main(&req)
+		resp, err := l.Index(&req)
 		kernel.Send(w, r, resp, err)
 	}
 }
