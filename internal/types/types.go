@@ -3,10 +3,12 @@
 
 package types
 
-type Request struct {
-	Name string `path:"name,options=you|me"`
+type FromRequest struct {
+	Name string `form:"name"`
 }
 
-type Response struct {
+type Response[T any] struct {
+	Code    int    `json:"code"`
+	Data    T      `json:"data"`
 	Message string `json:"message"`
 }

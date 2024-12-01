@@ -2,7 +2,6 @@ package logic
 
 import (
 	"context"
-
 	"main/internal/svc"
 	"main/internal/types"
 
@@ -23,8 +22,9 @@ func NewMainLogic(ctx context.Context, svcCtx *svc.ServiceContext) *MainLogic {
 	}
 }
 
-func (l *MainLogic) Main(req *types.Request) (resp *types.Response, err error) {
-	// todo: add your logic here and delete this line
-
+func (l *MainLogic) Main(req *types.FromRequest) (resp *types.Response[string], err error) {
+	resp = &types.Response[string]{
+		Data: req.Name,
+	}
 	return
 }
