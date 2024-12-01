@@ -1,4 +1,4 @@
-package http
+package kernel
 
 import (
 	"github.com/zeromicro/go-zero/rest/httpx"

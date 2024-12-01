@@ -1,4 +1,4 @@
-package http
+package kernel
 
 type ErrorCodeInterface interface {
 	GetCode() int

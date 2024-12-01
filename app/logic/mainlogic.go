@@ -2,7 +2,7 @@ package logic
 
 import (
 	"context"
-	"main/app/kernel/http"
+	"main/app/kernel"
 	"main/app/svc"
 	"main/app/types"
 
@@ -23,7 +23,7 @@ func NewMainLogic(ctx context.Context, svcCtx *svc.ServiceContext) *MainLogic {
 	}
 }
 
-func (l *MainLogic) Main(req *types.FromRequest) (resp *types.Response[string], err http.ErrorCodeInterface) {
+func (l *MainLogic) Main(req *types.FromRequest) (resp *types.Response[string], err kernel.ErrorCodeInterface) {
 	resp = &types.Response[string]{
 		Data: req.Name,
 	}

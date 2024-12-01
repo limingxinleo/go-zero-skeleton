@@ -3,9 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
-
 	"main/app/config"
 	"main/app/handler"
+	"main/app/kernel"
 	"main/app/svc"
 
 	"github.com/zeromicro/go-zero/core/conf"
@@ -22,6 +22,8 @@ func main() {
 
 	server := rest.MustNewServer(c.RestConf)
 	defer server.Stop()
+
+	server.Use(kernel.HttpDebugMiddleware)
 
 	ctx := svc.NewServiceContext(c)
 	handler.RegisterHandlers(server, ctx)

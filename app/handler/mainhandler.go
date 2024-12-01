@@ -1,7 +1,7 @@
 package handler
 
 import (
-	http2 "main/app/kernel/http"
+	"main/app/kernel"
 	"net/http"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
@@ -20,6 +20,6 @@ func MainHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 
 		l := logic.NewMainLogic(r.Context(), svcCtx)
 		resp, err := l.Main(&req)
-		http2.Send(w, r, resp, err)
+		kernel.Send(w, r, resp, err)
 	}
 }
