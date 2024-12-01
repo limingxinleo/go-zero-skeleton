@@ -2,9 +2,9 @@ package kernel
 
 import "net/http"
 
-func HttpDebugMiddleware(next http.HandlerFunc) http.HandlerFunc {
+func ServerMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Add("X-Middleware", "static-middleware")
+		w.Header().Add("Server", "go-zero")
 		next(w, r)
 	}
 }
