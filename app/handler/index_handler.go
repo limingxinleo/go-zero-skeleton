@@ -18,7 +18,7 @@ func IndexHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := logic.NewMainLogic(r.Context(), svcCtx)
+		l := logic.NewIndexService(r.Context(), svcCtx)
 		resp, err := l.Index(&req)
 		kernel.Send(w, r, resp, err)
 	}

@@ -15,7 +15,7 @@ type IndexService struct {
 	svcCtx *svc.ServiceContext
 }
 
-func NewMainLogic(ctx context.Context, svcCtx *svc.ServiceContext) *IndexService {
+func NewIndexService(ctx context.Context, svcCtx *svc.ServiceContext) *IndexService {
 	return &IndexService{
 		Logger: logx.WithContext(ctx),
 		ctx:    ctx,
