@@ -1,11 +1,11 @@
-package handler
+package controller
 
 import (
 	"main/app/kernel"
 	"net/http"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
-	"main/app/logic"
+	"main/app/service"
 	"main/app/svc"
 	"main/app/types"
 )
@@ -18,7 +18,7 @@ func IndexHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := logic.NewIndexService(r.Context(), svcCtx)
+		l := service.NewIndexService(r.Context(), svcCtx)
 		resp, err := l.Index(&req)
 		kernel.Send(w, r, resp, err)
 	}

@@ -4,7 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"main/app/config"
-	"main/app/handler"
+	"main/app/controller"
 	"main/app/kernel"
 	"main/app/svc"
 
@@ -26,7 +26,7 @@ func main() {
 	server.Use(kernel.ServerMiddleware)
 
 	ctx := svc.NewServiceContext(c)
-	handler.RegisterHandlers(server, ctx)
+	controller.RegisterHandlers(server, ctx)
 
 	fmt.Printf("Starting server at %s:%d...\n", c.Host, c.Port)
 	server.Start()
