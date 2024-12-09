@@ -17,17 +17,17 @@ var configFile = flag.String("f", "etc/main-api.yaml", "the config file")
 func main() {
 	flag.Parse()
 
-	var c config.Config
-	conf.MustLoad(*configFile, &c)
+	config.Conf = &config.Config{}
+	conf.MustLoad(*configFile, config.Conf)
 
-	server := rest.MustNewServer(c.RestConf)
+	server := rest.MustNewServer(config.Conf.RestConf)
 	defer server.Stop()
 
 	server.Use(kernel.ServerMiddleware)
 
-	ctx := svc.NewServiceContext(c)
+	ctx := svc.NewServiceContext(*config.Conf)
 	controller.RegisterHandlers(server, ctx)
 
-	fmt.Printf("Starting server at %s:%d...\n", c.Host, c.Port)
+	fmt.Printf("Starting server at %s:%d...\n", config.Conf.Host, config.Conf.Port)
 	server.Start()
 }
