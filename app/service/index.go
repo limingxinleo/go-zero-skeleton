@@ -3,11 +3,10 @@ package service
 import (
 	"context"
 	"fmt"
+	"github.com/zeromicro/go-zero/core/logx"
 	"main/app/kernel"
 	"main/app/svc"
 	"main/app/types"
-
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type IndexService struct {
