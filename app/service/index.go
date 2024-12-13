@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"main/app/kernel"
 	"main/app/svc"
 	"main/app/types"
@@ -24,6 +25,6 @@ func NewIndexService(ctx context.Context, svcCtx *svc.ServiceContext) *IndexServ
 }
 
 func (l *IndexService) Index(req *types.FromRequest) (result string, err kernel.ErrorCodeInterface) {
-	result = req.Name
+	result = fmt.Sprintf("Hi %s, welcome to %s", req.Name, l.svcCtx.Config.Name)
 	return
 }

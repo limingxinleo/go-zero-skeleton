@@ -21,4 +21,4 @@ jobs:
       - name: Fetch Repository
         uses: actions/checkout@v2
       - name: Run Test
-        run: go test ./... -v -race
+        run: ROOT_PATH=$(pwd) go test ./... -v -race

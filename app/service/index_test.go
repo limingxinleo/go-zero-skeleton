@@ -15,5 +15,5 @@ func TestIndexService_Index(t *testing.T) {
 		Name: "limingxinleo",
 	})
 
-	assert.Equal(t, "limingxinleo", result)
+	assert.Equal(t, "Hi limingxinleo, welcome to main-api", result)
 }

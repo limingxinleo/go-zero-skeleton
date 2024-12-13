@@ -10,8 +10,6 @@ import (
 )
 
 func main() {
-	app.BootApplication()
-
 	server := rest.MustNewServer(config.Conf.RestConf)
 	defer server.Stop()
 
