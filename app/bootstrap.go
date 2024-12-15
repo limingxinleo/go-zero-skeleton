@@ -4,6 +4,7 @@ import (
 	"github.com/zeromicro/go-zero/core/conf"
 	"log"
 	"main/app/config"
+	"main/app/kernel/conn"
 	"main/app/svc"
 	"os"
 	"path/filepath"
@@ -36,6 +37,10 @@ func init() {
 
 	config.Conf = &config.Config{}
 	conf.MustLoad(path, config.Conf)
+
+	// 设置链接相关数据
+	conn.InitRedis()
+	conn.InitMySQL()
 
 	ServiceContext = svc.NewServiceContext(*config.Conf)
 }
