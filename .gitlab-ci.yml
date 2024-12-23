@@ -17,11 +17,11 @@ unit:
     DOCKER_TLS_CERTDIR: ""
     DOCKER_DRIVER: overlay2
   script:
-    - DOCKERFILE=unit.Dockerfile docker-compose up -d --remove-orphans --build
+    - DOCKERFILE=unit.Dockerfile docker compose up -d --remove-orphans --build
     - sleep 30
     - docker exec $(basename $(pwd))-hyperf-1 go test ./... -v
   after_script:
-    - docker-compose down
+    - docker compose down
   tags:
     - unit
 
