@@ -4,7 +4,7 @@
 package types
 
 type FromRequest struct {
-	Name string `form:"name"`
+	Name string `form:"name,optional,default=world"`
 }
 
 type Response[T any] struct {

@@ -3,6 +3,7 @@
 stages:
   - unit
   - build
+  - deploy
 
 variables:
   PROJECT_NAME: hyperf
