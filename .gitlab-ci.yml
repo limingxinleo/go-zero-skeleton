@@ -36,6 +36,15 @@ build_test_docker:
   tags:
     - builder
 
+deploy_test_docker:
+  stage: deploy
+  script:
+    - docker stack deploy -c deploy.test.yml --with-registry-auth $PROJECT_NAME
+  only:
+    - test
+  tags:
+    - test
+
 build_docker:
   stage: build
   script:
@@ -44,6 +53,15 @@ build_docker:
     - docker tag $PROJECT_NAME $REGISTRY_URL/$PROJECT_NAME:latest
     - docker push $REGISTRY_URL/$PROJECT_NAME:$CI_COMMIT_REF_NAME
     - docker push $REGISTRY_URL/$PROJECT_NAME:latest
+  only:
+    - tags
+  tags:
+    - builder
+
+deploy_docker:
+  stage: deploy
+  script:
+    - echo SUCCESS
   only:
     - tags
   tags:
