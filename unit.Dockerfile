@@ -3,6 +3,7 @@ FROM golang:alpine AS builder
 LABEL stage=gobuilder
 
 ENV GOPROXY=https://goproxy.cn,direct \
+    TZ=Asia/Shanghai \
     ROOT_PATH=/app \
     CONFIG_PATH=etc/unit-api.yaml
 
