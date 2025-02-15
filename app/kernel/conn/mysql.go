@@ -26,6 +26,13 @@ type MySQLResult[T any] struct {
 	Err    error
 }
 
+func NewMySQLResult[T any](result T, err error) MySQLResult[T] {
+	return MySQLResult[T]{
+		Result: result,
+		Err:    err,
+	}
+}
+
 func (m MySQLResult[T]) Handle() (*T, error) {
 	switch {
 	case m.Err == nil:
