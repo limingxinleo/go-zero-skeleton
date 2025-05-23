@@ -10,14 +10,14 @@ import (
 )
 
 type IndexService struct {
-	logx.Logger
+	log    logx.Logger
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
 }
 
 func NewIndexService(ctx context.Context, svcCtx *svc.ServiceContext) *IndexService {
 	return &IndexService{
-		Logger: logx.WithContext(ctx),
+		log:    logx.WithContext(ctx),
 		ctx:    ctx,
 		svcCtx: svcCtx,
 	}
