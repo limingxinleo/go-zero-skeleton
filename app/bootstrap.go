@@ -44,3 +44,5 @@ func init() {
 
 	ServiceContext = svc.NewServiceContext(*config.Conf)
 }
+
+func TODO() {}
