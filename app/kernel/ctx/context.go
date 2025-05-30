@@ -11,6 +11,10 @@ type ContextContainer struct {
 	ctx context.Context
 }
 
+func NewContextContainer(ctx context.Context) *ContextContainer {
+	return &ContextContainer{ctx: ctx}
+}
+
 func (c *ContextContainer) Logger() logx.Logger {
 	return Logger(c.ctx)
 }
