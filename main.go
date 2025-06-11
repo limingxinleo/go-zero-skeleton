@@ -7,10 +7,20 @@ import (
 	"main/app/config"
 	"main/app/controller"
 	"main/app/kernel"
+	"net/http"
 )
 
 func main() {
-	server := rest.MustNewServer(config.Conf.RestConf)
+	server := rest.MustNewServer(
+		config.Conf.RestConf,
+		rest.WithCustomCors(
+			func(header http.Header) {
+				header.Set("Access-Control-Allow-Headers", "DNT,Keep-Alive,User-Agent,Cache-Control,Content-Type,Authorization")
+			},
+			nil,
+			"*",
+		),
+	)
 	defer server.Stop()
 
 	server.Use(kernel.ServerMiddleware)
