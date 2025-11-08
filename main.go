@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
+	"github.com/limingxinleo/go-zero-skeleton/app"
+	"github.com/limingxinleo/go-zero-skeleton/app/config"
+	"github.com/limingxinleo/go-zero-skeleton/app/controller"
+	"github.com/limingxinleo/go-zero-skeleton/app/kernel"
 	"github.com/zeromicro/go-zero/rest"
-	"main/app"
-	"main/app/config"
-	"main/app/controller"
-	"main/app/kernel"
 	"net/http"
 )
 

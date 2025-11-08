@@ -5,7 +5,7 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	//"gorm.io/driver/mysql"
 	//"gorm.io/gorm"
-	"main/app/config"
+	"github.com/limingxinleo/go-zero-skeleton/app/config"
 )
 
 var MySQL sqlx.SqlConn

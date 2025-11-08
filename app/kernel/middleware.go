@@ -1,7 +1,7 @@
 package kernel
 
 import (
-	"main/app/kernel/ctx"
+	"github.com/limingxinleo/go-zero-skeleton/app/kernel/ctx"
 	"net/http"
 )
 

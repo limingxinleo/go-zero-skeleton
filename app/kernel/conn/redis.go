@@ -1,8 +1,8 @@
 package conn
 
 import (
+	"github.com/limingxinleo/go-zero-skeleton/app/config"
 	"github.com/zeromicro/go-zero/core/stores/redis"
-	"main/app/config"
 )
 
 var Redis *redis.Redis

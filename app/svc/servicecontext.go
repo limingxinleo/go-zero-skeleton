@@ -1,7 +1,7 @@
 package svc
 
 import (
-	"main/app/config"
+	"github.com/limingxinleo/go-zero-skeleton/app/config"
 )
 
 type ServiceContext struct {

@@ -2,9 +2,9 @@ package service
 
 import (
 	"context"
+	"github.com/limingxinleo/go-zero-skeleton/app"
+	"github.com/limingxinleo/go-zero-skeleton/app/types"
 	"github.com/stretchr/testify/assert"
-	"main/app"
-	"main/app/types"
 	"testing"
 )
 

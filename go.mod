@@ -1,4 +1,4 @@
-module main
+module github.com/limingxinleo/go-zero-skeleton
 
 go 1.23.3
 

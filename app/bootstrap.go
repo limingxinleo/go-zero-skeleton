@@ -1,11 +1,11 @@
 package app
 
 import (
+	"github.com/limingxinleo/go-zero-skeleton/app/config"
+	"github.com/limingxinleo/go-zero-skeleton/app/kernel/conn"
+	"github.com/limingxinleo/go-zero-skeleton/app/svc"
 	"github.com/zeromicro/go-zero/core/conf"
 	"log"
-	"main/app/config"
-	"main/app/kernel/conn"
-	"main/app/svc"
 	"os"
 	"path/filepath"
 )

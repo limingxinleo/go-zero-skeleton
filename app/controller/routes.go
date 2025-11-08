@@ -6,7 +6,7 @@ package controller
 import (
 	"net/http"
 
-	"main/app/svc"
+	"github.com/limingxinleo/go-zero-skeleton/app/svc"
 
 	"github.com/zeromicro/go-zero/rest"
 )

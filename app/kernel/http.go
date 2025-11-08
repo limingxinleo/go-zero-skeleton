@@ -1,9 +1,9 @@
 package kernel
 
 import (
+	"github.com/limingxinleo/go-zero-skeleton/app/types"
 	"github.com/zeromicro/go-zero/core/trace"
 	"github.com/zeromicro/go-zero/rest/httpx"
-	"main/app/types"
 	"net/http"
 )
 

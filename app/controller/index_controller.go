@@ -1,13 +1,13 @@
 package controller
 
 import (
-	"main/app/kernel"
+	"github.com/limingxinleo/go-zero-skeleton/app/kernel"
 	"net/http"
 
+	"github.com/limingxinleo/go-zero-skeleton/app/service"
+	"github.com/limingxinleo/go-zero-skeleton/app/svc"
+	"github.com/limingxinleo/go-zero-skeleton/app/types"
 	"github.com/zeromicro/go-zero/rest/httpx"
-	"main/app/service"
-	"main/app/svc"
-	"main/app/types"
 )
 
 func IndexHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
