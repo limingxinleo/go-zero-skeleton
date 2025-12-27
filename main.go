@@ -2,15 +2,23 @@ package main
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/limingxinleo/go-zero-skeleton/app"
 	"github.com/limingxinleo/go-zero-skeleton/app/config"
 	"github.com/limingxinleo/go-zero-skeleton/app/controller"
 	"github.com/limingxinleo/go-zero-skeleton/app/kernel"
+	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/rest"
-	"net/http"
 )
 
 func main() {
+	logx.MustSetup(logx.LogConf{
+		ServiceName: config.Conf.Name,
+		Level:       "info",
+		TimeFormat:  "2006-01-02 15:04:05.000",
+	})
+
 	server := rest.MustNewServer(
 		config.Conf.RestConf,
 		rest.WithCustomCors(
