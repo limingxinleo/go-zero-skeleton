@@ -10,3 +10,7 @@ var Redis *redis.Redis
 func InitRedis() {
 	Redis = redis.MustNewRedis(config.Conf.RedisConf)
 }
+
+func GetRedis() *redis.Redis {
+	return Redis
+}

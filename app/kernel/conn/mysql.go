@@ -2,6 +2,7 @@ package conn
 
 import (
 	"errors"
+
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	//"gorm.io/driver/mysql"
 	//"gorm.io/gorm"
@@ -15,6 +16,10 @@ var MySQL sqlx.SqlConn
 func InitMySQL() {
 	MySQL = sqlx.NewMysql(config.Conf.MySqlConf.Dsn)
 	//Gorm, _ = gorm.Open(mysql.Open(config.Conf.MySqlConf.Dsn), &gorm.Config{})
+}
+
+func GetMySQL() sqlx.SqlConn {
+	return MySQL
 }
 
 //func NewGormDryRunSession() *gorm.DB {
