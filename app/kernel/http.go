@@ -1,10 +1,8 @@
 package kernel
 
 import (
-	"errors"
 	"net/http"
 
-	"github.com/limingxinleo/go-zero-skeleton/app/constants"
 	"github.com/limingxinleo/go-zero-skeleton/app/types"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/trace"
@@ -14,8 +12,8 @@ import (
 func Send(w http.ResponseWriter, r *http.Request, resp any, err ErrorCodeInterface) {
 	var body types.Response[any]
 	if err != nil {
-		if errors.Is(err, constants.ServerError) {
-			logx.ErrorStack(err)
+		if err.Err() != nil {
+			logx.ErrorStack(err.Err())
 		}
 
 		body = types.Response[any]{
