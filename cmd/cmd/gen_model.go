@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"path"
+
 	"github.com/limingxinleo/go-zero-skeleton/app"
 	"github.com/spf13/cobra"
 	"gorm.io/gen"
@@ -11,9 +13,10 @@ var genModelCmd = &cobra.Command{
 	Short: "Generate models for gorm",
 	Long:  `Generate models for gorm`,
 	Run: func(cmd *cobra.Command, args []string) {
+		ap := app.GetApplication()
 		g := gen.NewGenerator(gen.Config{
-			OutPath:      "./dal/query", // 生成的查询代码路径
-			ModelPkgPath: "./dal/model", // 生成的模型路径
+			OutPath:      path.Join(ap.RootPath, "app/dao/query"), // 生成的查询代码路径
+			ModelPkgPath: path.Join(ap.RootPath, "app/dao/model"), // 生成的模型路径
 
 			// 生成查询时使用指针类型
 			FieldNullable: true,
@@ -29,7 +32,6 @@ var genModelCmd = &cobra.Command{
 			Mode: gen.WithDefaultQuery | gen.WithQueryInterface,
 		})
 
-		ap := app.GetApplication()
 		g.UseDB(ap.Gorm)
 
 		if len(args) == 0 {

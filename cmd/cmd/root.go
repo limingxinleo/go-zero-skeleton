@@ -3,7 +3,7 @@ package cmd
 import (
 	"os"
 
-	"github.com/limingxinleo/go-zero-skeleton/app/config"
+	"github.com/limingxinleo/go-zero-skeleton/app"
 	"github.com/spf13/cobra"
 )
 
@@ -20,7 +20,8 @@ func Execute() {
 }
 
 func init() {
-	name := config.GetConfig().Name
+	name := app.GetApplication().Config.Name
+
 	rootCmd.Short = "The commands for " + name
 	rootCmd.Long = "The commands for " + name
 }
