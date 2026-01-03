@@ -24,4 +24,5 @@ func init() {
 
 	rootCmd.Short = "The commands for " + name
 	rootCmd.Long = "The commands for " + name
+	rootCmd.Version = "v1.1.0"
 }
