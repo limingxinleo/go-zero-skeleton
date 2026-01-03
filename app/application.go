@@ -8,7 +8,9 @@ import (
 	"github.com/limingxinleo/go-zero-skeleton/app/config"
 	"github.com/limingxinleo/go-zero-skeleton/app/svc"
 	"github.com/zeromicro/go-zero/core/conf"
+	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
+	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
@@ -21,6 +23,7 @@ type Application struct {
 	ServiceContext *svc.ServiceContext
 	MySQL          sqlx.SqlConn
 	Gorm           *gorm.DB
+	Redis          *redis.Redis
 }
 
 func GetApplication() *Application {
@@ -63,9 +66,25 @@ func (a *Application) initServiceContext() {
 	a.ServiceContext = svc.NewServiceContext(*a.Config)
 }
 
+func (a *Application) initMySQL() {
+	a.MySQL = sqlx.NewMysql(a.Config.MySqlConf.Dsn)
+	g, err := gorm.Open(mysql.Open(a.Config.MySqlConf.Dsn), &gorm.Config{})
+	if err != nil {
+		log.Fatalf("Failed to create gorm: %v", err)
+	}
+
+	a.Gorm = g
+}
+
+func (a *Application) initRedis() {
+	a.Redis = redis.MustNewRedis(a.Config.RedisConf)
+}
+
 func (a *Application) Init() {
 	a.initRootPath()
 	a.initConfigPath()
 	a.initConfig()
 	a.initServiceContext()
+	a.initMySQL()
+	a.initRedis()
 }

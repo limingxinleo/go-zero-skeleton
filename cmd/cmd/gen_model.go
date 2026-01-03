@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/limingxinleo/go-zero-skeleton/app/kernel/conn"
+	"github.com/limingxinleo/go-zero-skeleton/app"
 	"github.com/spf13/cobra"
 	"gorm.io/gen"
 )
@@ -29,7 +29,8 @@ var genModelCmd = &cobra.Command{
 			Mode: gen.WithDefaultQuery | gen.WithQueryInterface,
 		})
 
-		g.UseDB(conn.GetGorm())
+		ap := app.GetApplication()
+		g.UseDB(ap.Gorm)
 
 		if len(args) == 0 {
 			g.ApplyBasic(g.GenerateAllTable()...)

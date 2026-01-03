@@ -2,14 +2,15 @@ package service
 
 import (
 	"context"
+	"testing"
+
 	"github.com/limingxinleo/go-zero-skeleton/app"
 	"github.com/limingxinleo/go-zero-skeleton/app/types"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestIndexService_Index(t *testing.T) {
-	service := NewIndexService(context.TODO(), app.ServiceContext)
+	service := NewIndexService(context.TODO(), app.GetApplication().ServiceContext)
 
 	result, _ := service.Index(&types.FromRequest{
 		Name: "limingxinleo",
