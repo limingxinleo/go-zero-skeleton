@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/limingxinleo/go-zero-skeleton/app/config"
+	"github.com/limingxinleo/go-zero-skeleton/app/kernel/logger"
 	"github.com/limingxinleo/go-zero-skeleton/app/svc"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/stores/redis"
@@ -68,7 +69,9 @@ func (a *Application) initServiceContext() {
 
 func (a *Application) initMySQL() {
 	a.MySQL = sqlx.NewMysql(a.Config.MySqlConf.Dsn)
-	g, err := gorm.Open(mysql.Open(a.Config.MySqlConf.Dsn), &gorm.Config{})
+	g, err := gorm.Open(mysql.Open(a.Config.MySqlConf.Dsn), &gorm.Config{
+		Logger: logger.NewGormLogger(),
+	})
 	if err != nil {
 		log.Fatalf("Failed to create gorm: %v", err)
 	}
