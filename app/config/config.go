@@ -16,12 +16,6 @@ type MySqlConf struct {
 	Dsn string `json:"dsn"`
 }
 
-var Conf *Config
-
 func (c *Config) IsProd() bool {
 	return c.Environment == "prod"
-}
-
-func GetConfig() *Config {
-	return Conf
 }
