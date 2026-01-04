@@ -4,10 +4,18 @@
 
 ### 生成模型
 
+1. 使用原生组件
+
 将数据库 `ddl` 语句放到 `app/model` 中，执行下述命令生成所有模型
 
 ```shell
 goctl model mysql ddl --src ./app/model/ddl/mysql.sql --dir ./app/model
+```
+
+2. 使用 Gorm
+
+```shell
+go run cmd/main.go gen:mode
 ```
 
 ## RPC
@@ -20,7 +28,7 @@ goctl model mysql ddl --src ./app/model/ddl/mysql.sql --dir ./app/model
 syntax = "proto3";
 
 package user_api;
-option go_package="./app/rpc/user_api;user_api";
+option go_package = "./app/rpc/user_api;user_api";
 
 service UserService {
   rpc GetChildren (UserIdRequest) returns (ChildrenResponse);
@@ -101,26 +109,42 @@ package main
 
 import (
 	"fmt"
-	"github.com/zeromicro/go-zero/rest"
+	"net/http"
+
 	"github.com/limingxinleo/go-zero-skeleton/app"
-	"github.com/limingxinleo/go-zero-skeleton/app/config"
 	"github.com/limingxinleo/go-zero-skeleton/app/controller"
 	"github.com/limingxinleo/go-zero-skeleton/app/kernel"
+	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/rest"
 )
 
 func main() {
-	server := rest.MustNewServer(config.Conf.RestConf)
+	logx.MustSetup(logx.LogConf{
+		ServiceName: app.GetApplication().Config.Name,
+		Level:       "info",
+		TimeFormat:  "2006-01-02 15:04:05.000",
+	})
+
+	server := rest.MustNewServer(
+		app.GetApplication().Config.RestConf,
+		rest.WithCustomCors(
+			func(header http.Header) {
+				header.Set("Access-Control-Allow-Headers", "DNT,Keep-Alive,User-Agent,Cache-Control,Content-Type,Authorization")
+			},
+			nil,
+			"*",
+		),
+	)
 	defer server.Stop()
 
 	server.Use(kernel.ServerMiddleware)
 
-	controller.RegisterHandlers(server, app.ServiceContext)
-
+	controller.RegisterHandlers(server, app.GetApplication().ServiceContext)
+	
 	// 增加如下代码
-	go rpc.StartGRPCServer(config.Conf)
+	go rpc.StartGRPCServer(app.GetApplication().Config)
 
-	fmt.Printf("Starting server at %s:%d...\n", config.Conf.Host, config.Conf.Port)
+	fmt.Printf("Starting server at %s:%d...\n", app.GetApplication().Config.Host, app.GetApplication().Config.Port)
 	server.Start()
 }
-
 ```
