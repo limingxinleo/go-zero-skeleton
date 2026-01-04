@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/limingxinleo/go-zero-skeleton/app/config"
 	"github.com/limingxinleo/go-zero-skeleton/app/kernel/logger"
@@ -75,6 +76,15 @@ func (a *Application) initMySQL() {
 	if err != nil {
 		log.Fatalf("Failed to create gorm: %v", err)
 	}
+
+	db, err := g.DB()
+	if err != nil {
+		log.Fatalf("Failed to get gorm instance: %v", err)
+	}
+
+	db.SetMaxIdleConns(10)
+	db.SetMaxOpenConns(100)
+	db.SetConnMaxLifetime(time.Hour)
 
 	a.Gorm = g
 }
