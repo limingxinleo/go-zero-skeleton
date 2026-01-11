@@ -148,3 +148,25 @@ func main() {
 	server.Start()
 }
 ```
+
+5. 增加调用代码
+
+```
+package user_api
+
+import (
+	"fmt"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+)
+
+// 此方法创建的 Conn 可以进行缓存
+func NewUserServiceConn(host string, port int) (*grpc.ClientConn, error) {
+	return grpc.NewClient(
+		fmt.Sprintf("%s:%d", host, port),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+}
+
+```
