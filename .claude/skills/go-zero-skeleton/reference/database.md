@@ -82,9 +82,33 @@ err := app.GetApplication().Gorm.WithContext(ctx).
 
 ## Redis
 
-`app.GetApplication().Redis` 为 go-zero `*redis.Redis`，常用：
+`app.GetApplication().Redis` 为 go-zero `*redis.Redis`，连接在 bootstrap 阶段自动建立（见 SKILL.md「import 副作用」）。
+
+go-zero v1.7.4 为双轨 API：本项目统一使用**不带 ctx 的方法**；需要传递上下文（如 trace）时改用 `XxxCtx` 后缀变体（`GetCtx(ctx, key)`、`SetexCtx(ctx, key, value, seconds)` 等）。
 
 ```go
-err := app.GetApplication().Redis.SetexCtx(ctx, "key", "value", 3600)
-val, err := app.GetApplication().Redis.GetCtx(ctx, "key")
+rds := app.GetApplication().Redis
+
+val, err := rds.Get("key")             // key 不存在时返回 redis.Nil
+err = rds.Set("key", "value")          // 无过期时间
+err = rds.Setex("key", "value", 3600)  // 带过期时间（秒）
+n, err := rds.Del("key1", "key2")
+ok, err := rds.Exists("key")
+n, err := rds.Incr("counter")
+```
+
+**key 不存在的处理（必读）**：`Get` 在 key 不存在时返回 `("", redis.Nil)`。`redis.Nil` 是预期内的哨兵错误而非服务故障，必须单独排除，否则接口会对空 key 误报 500：
+
+```go
+import (
+	"errors"
+
+	"github.com/zeromicro/go-zero/core/stores/redis"
+)
+
+val, err := app.GetApplication().Redis.Get("test")
+if err != nil && !errors.Is(err, redis.Nil) {
+	return "", constants.ServerError.WithError(err)
+}
+// redis.Nil 时 val 为空字符串，按业务语义处理（默认空值返回即可）
 ```

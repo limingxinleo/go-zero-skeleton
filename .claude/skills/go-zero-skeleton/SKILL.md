@@ -73,7 +73,7 @@ description: 基于 go-zero + Gorm + Redis 的 API 骨架开发指南。在此�
 |---|---|
 | 从骨架初始化新项目（module/服务名/CI 改名清单） | `reference/init-project.md` |
 | 新增 HTTP 接口（api/types/service/controller/routes 全流程模板） | `reference/new-endpoint.md` |
-| 数据库：建表、gen:model 生成 dao、Gorm/sqlx 查询、事务 | `reference/database.md` |
+| 数据库：建表、gen:model 生成 dao、Gorm/sqlx 查询、事务；Redis 读写（`redis.Nil` 处理） | `reference/database.md` |
 | 新增 GRPC 服务端 / 客户端调用 | `reference/grpc.md` |
 | 单元测试编写、本地运行与调试 | `reference/testing-local.md` |
 
