@@ -34,6 +34,9 @@ description: 基于 go-zero + Gorm + Redis 的 API 骨架开发指南。在此�
 
 ## 关键机制（所有任务必读）
 
+### 包名以项目实际为准
+本文档及各 reference 示例代码中的 import 路径均以骨架原始 module 名 `github.com/limingxinleo/go-zero-skeleton` 为例。实际使用方可能已改名为自己的包名：**凡示例中的 import 前缀与项目 `go.mod` 的 `module` 行不符时，一律以 `go.mod` 为准**，将 `github.com/limingxinleo/go-zero-skeleton` 整体替换为项目实际 module 名。从骨架初始化新项目的改名步骤见 `reference/init-project.md`。
+
 ### Application 单例与 import 副作用
 `app/bootstrap.go` 的 `init()` 会依次：定位根目录 → 加载配置 → 创建 ServiceContext → 连接 MySQL（sqlx 与 Gorm 双实例）→ 连接 Redis。
 因此**任何 import `app` 包的代码（包括单元测试）运行时都要求 MySQL/Redis 可达**，连接失败会直接 `log.Fatalf`。
