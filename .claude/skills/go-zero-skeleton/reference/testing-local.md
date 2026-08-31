@@ -16,11 +16,13 @@ docker compose down                              # 结束后清理
 
 ### 方式 B：本地服务
 
-本地已运行 MySQL（含 `hyperf` 库及 `init.sql` 建表）与 Redis 时，直接：
+本地已运行 MySQL（含 `hyperf` 库及 `init.sql` 建表）与 Redis 时，在仓库根目录执行：
 
 ```bash
-go test ./... -v
+ROOT_PATH=$PWD go test ./... -v
 ```
+
+`ROOT_PATH` 必须显式指定：`go test` 的工作目录是被测包目录（如 `app/service/`），而 bootstrap 以工作目录定位 `etc/main-api.yaml`，缺少该变量时测试会因找不到配置文件直接失败。
 
 ## 单元测试模板
 
@@ -71,7 +73,7 @@ docker compose up -d --build
 ```bash
 go build ./...
 go vet ./...
-go test ./... -v
+ROOT_PATH=$PWD go test ./... -v
 ```
 
 ## CI 说明

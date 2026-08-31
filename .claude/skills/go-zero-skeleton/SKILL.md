@@ -83,9 +83,19 @@ description: 基于 go-zero + Gorm + Redis 的 API 骨架开发指南。在此�
 go run main.go                            # 启动 HTTP 服务（需本地 MySQL/Redis 可达）
 go run cmd/main.go gen:model              # 从数据库生成全部表的 Gorm dao
 go run cmd/main.go gen:model user         # 仅生成指定表（可多个表名）
-go test ./... -v                          # 单测（同样依赖数据库可达）
+ROOT_PATH=$PWD go test ./... -v           # 本地跑单测（需 MySQL/Redis 可达，ROOT_PATH 必加，见下）
 docker compose up -d --build              # 完整栈：MySQL + Redis + 应用（部署镜像）
 DOCKERFILE=unit.Dockerfile docker compose up -d --build   # 单测环境镜像（含 Go 工具链）
 ```
+
+### 本地跑单测必须带 ROOT_PATH（易踩坑）
+
+`go test` 运行被测包的二进制时，工作目录是**包目录**（如 `app/service/`）而非仓库根目录；bootstrap 恰好以工作目录定位 `etc/main-api.yaml`（见「Application 单例与 import 副作用」）。因此本地裸跑 `go test ./...` 会报：
+
+```
+error: config file .../app/service/etc/main-api.yaml ... no such file or directory
+```
+
+在仓库根目录执行时显式指定 `ROOT_PATH=$PWD` 即可；CI 容器内由 `unit.Dockerfile` 内置的 `ROOT_PATH=/app` 解决，无需额外设置。更多测试细节见 `reference/testing-local.md`。
 
 两个 Dockerfile 的区别：`Dockerfile` 为多阶段构建、最终 scratch 精简镜像（生产部署用）；`unit.Dockerfile` 基于golang:alpine、带完整源码与工具链，供 CI 在容器内执行 `go test`。
