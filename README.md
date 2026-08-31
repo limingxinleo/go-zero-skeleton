@@ -15,7 +15,7 @@ goctl model mysql ddl --src ./app/model/ddl/mysql.sql --dir ./app/model
 2. 使用 Gorm
 
 ```shell
-go run cmd/main.go gen:mode
+go run cmd/main.go gen:model
 ```
 
 ## RPC
