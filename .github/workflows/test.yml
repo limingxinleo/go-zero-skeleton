@@ -6,22 +6,60 @@ on:
 
 name: Test
 jobs:
-  ci:
-    name: Test for Golang ${{ matrix.go-version }} on ${{ matrix.platform }}
+  docker:
+    name: Test in Docker for Golang ${{ matrix.go-version }}
     strategy:
       matrix:
-        go-version: [ 1.21.x, 1.22.x, 1.23.x, 1.24.x, 1.25.x ]
-        platform: [ ubuntu-latest ]
-    runs-on: ${{ matrix.platform }}
+        go-version: [ 1.26.x ]
+    runs-on: ubuntu-latest
     steps:
-      - name: Install Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: ${{ matrix.go-version }}
       - name: Fetch Repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Run Test
         run: |
           DOCKERFILE=unit.Dockerfile docker compose up -d --remove-orphans --build
           sleep 30
           docker exec $(basename $(pwd))-hyperf-1 go test ./... -v
+  host:
+    name: Test on Runner for Golang ${{ matrix.go-version }}
+    strategy:
+      matrix:
+        go-version: [ 1.26.x ]
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql/mysql-server:8.0
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: "true"
+          MYSQL_ROOT_HOST: "%"
+          MYSQL_DATABASE: "hyperf"
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -uroot"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      ROOT_PATH: ${{ github.workspace }}
+      CONFIG_PATH: etc/unit-api.yaml
+    steps:
+      - name: Fetch Repository
+        uses: actions/checkout@v4
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Map service hostnames to localhost
+        run: echo "127.0.0.1 mysql redis" | sudo tee -a /etc/hosts
+      - name: Run Test
+        run: go test ./... -v
