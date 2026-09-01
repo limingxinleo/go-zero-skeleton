@@ -35,11 +35,11 @@ import (
 q := query.Use(app.GetApplication().Gorm)
 
 // 查询单条
-u, err := q.User.WithContext(l.ctx).Where(q.User.ID.Eq(req.Id)).First()
+u, err := q.User.WithContext(s.ctx).Where(q.User.ID.Eq(req.Id)).First()
 // 条件查询列表
-users, err := q.User.WithContext(l.ctx).Where(q.User.Status.Eq(1)).Find()
+users, err := q.User.WithContext(s.ctx).Where(q.User.Status.Eq(1)).Find()
 // 创建
-err = q.User.WithContext(l.ctx).Create(&model.User{NickName: "xxx"})
+err = q.User.WithContext(s.ctx).Create(&model.User{NickName: "xxx"})
 ```
 
 注意 `ErrRecordNotFound`（`gorm.ErrRecordNotFound`）需按业务转换为错误码返回，不要透传给 `kernel.Send`。
@@ -48,7 +48,7 @@ err = q.User.WithContext(l.ctx).Create(&model.User{NickName: "xxx"})
 
 ```go
 db := app.GetApplication().Gorm
-err := db.WithContext(l.ctx).Transaction(func(tx *gorm.DB) error {
+err := db.WithContext(s.ctx).Transaction(func(tx *gorm.DB) error {
 	// 在 tx 上操作；或 q := query.Use(tx) 使用生成的查询
 	return nil
 })
@@ -84,17 +84,17 @@ err := app.GetApplication().Gorm.WithContext(ctx).
 
 `app.GetApplication().Redis` 为 go-zero `*redis.Redis`，连接在 bootstrap 阶段自动建立（见 SKILL.md「import 副作用」）。
 
-go-zero v1.7.4 为双轨 API：本项目统一使用**不带 ctx 的方法**；需要传递上下文（如 trace）时改用 `XxxCtx` 后缀变体（`GetCtx(ctx, key)`、`SetexCtx(ctx, key, value, seconds)` 等）。
+go-zero 的 Redis 为双轨 API：本项目统一使用**带 ctx 的 `XxxCtx` 方法**（与 goctl 生成产物、Go 主流「所有 IO 调用传递 ctx」规范一致），保证 trace 链路完整、调用可随 ctx 超时取消。无 ctx 变体仅在确实拿不到 context 的极少数场景使用。
 
 ```go
 rds := app.GetApplication().Redis
 
-val, err := rds.Get("key")             // key 不存在时返回 redis.Nil
-err = rds.Set("key", "value")          // 无过期时间
-err = rds.Setex("key", "value", 3600)  // 带过期时间（秒）
-n, err := rds.Del("key1", "key2")
-ok, err := rds.Exists("key")
-n, err := rds.Incr("counter")
+val, err := rds.GetCtx(ctx, "key")             // key 不存在时返回 redis.Nil
+err = rds.SetCtx(ctx, "key", "value")          // 无过期时间
+err = rds.SetexCtx(ctx, "key", "value", 3600)  // 带过期时间（秒）
+n, err := rds.DelCtx(ctx, "key1", "key2")
+ok, err := rds.ExistsCtx(ctx, "key")
+n, err := rds.IncrCtx(ctx, "counter")
 ```
 
 **key 不存在的处理（必读）**：`Get` 在 key 不存在时返回 `("", redis.Nil)`。`redis.Nil` 是预期内的哨兵错误而非服务故障，必须单独排除，否则接口会对空 key 误报 500：
@@ -106,7 +106,7 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/redis"
 )
 
-val, err := app.GetApplication().Redis.Get("test")
+val, err := app.GetApplication().Redis.GetCtx(ctx, "test")
 if err != nil && !errors.Is(err, redis.Nil) {
 	return "", constants.ServerError.WithError(err)
 }

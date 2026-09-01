@@ -30,7 +30,7 @@ func TestIndexHandler(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	var body types.Response[string]
-	assert.Nil(t, json.Unmarshal(w.Body.Bytes(), &body))
+	assert.NoError(t, json.Unmarshal(w.Body.Bytes(), &body))
 
 	assert.Equal(t, 0, body.Code)
 	assert.Equal(t, "Hi test, welcome to main-api", body.Data)
@@ -46,7 +46,7 @@ func TestIndexHandler_DefaultName(t *testing.T) {
 	handler(w, r)
 
 	var body types.Response[string]
-	assert.Nil(t, json.Unmarshal(w.Body.Bytes(), &body))
+	assert.NoError(t, json.Unmarshal(w.Body.Bytes(), &body))
 
 	assert.Equal(t, 0, body.Code)
 	assert.Equal(t, "Hi world, welcome to main-api", body.Data)

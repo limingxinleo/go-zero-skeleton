@@ -24,6 +24,8 @@ ROOT_PATH=$PWD go test ./... -v
 
 `ROOT_PATH` 必须显式指定：`go test` 的工作目录是被测包目录（如 `app/service/`），而 bootstrap 以工作目录定位 `etc/main-api.yaml`，缺少该变量时测试会因找不到配置文件直接失败。
 
+> 取舍说明：「单测依赖真实 MySQL/Redis」是骨架刻意选择的简单优先设计（`init()` 副作用自动装配，无需 mock）。若后续需要更快的纯单元测试，演进方向是：service 层数据访问收敛为接口，配 sqlmock / miniredis，或用 testcontainers-go 动态起容器，bootstrap 装配逻辑保持不动。
+
 ## 单元测试模板
 
 测试文件与被测 Service 同目录（参考 `app/service/index_test.go`），使用 testify：
@@ -41,17 +43,19 @@ import (
 )
 
 func TestUserService_Info(t *testing.T) {
-	svc := NewUserService(context.TODO(), app.GetApplication().ServiceContext)
+	s := NewUserService(context.Background(), app.GetApplication().ServiceContext)
 
-	result, err := svc.Info(&types.UserInfoRequest{Id: 1})
+	result, err := s.Info(&types.UserInfoRequest{Id: 1})
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, result)
 }
 ```
 
 要点：
 - `app.GetApplication().ServiceContext` 直接可用（import `app` 即完成初始化）。
+- context 用 `context.Background()`：`context.TODO()` 的语义是「尚不确定用哪个 ctx 的占位」，测试中明确不存在上游 ctx 时应用 `Background`。
+- 断言错误用 `assert.NoError`（对 error 的惯用断言），变量名用 `s`（避免遮蔽 `service`/`svc` 包名）。
 - 测试数据尽量在测试内自建自清理；依赖固定种子数据时在 `.github/init.sql` 中补充。
 
 ## 本地启动 HTTP 服务

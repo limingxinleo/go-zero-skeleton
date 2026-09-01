@@ -75,7 +75,7 @@ func NewUserService(ctx context.Context, svcCtx *svc.ServiceContext) *UserServic
 	}
 }
 
-func (l *UserService) Info(req *types.UserInfoRequest) (result *types.UserInfoResponse, err kernel.ErrorCodeInterface) {
+func (s *UserService) Info(req *types.UserInfoRequest) (result *types.UserInfoResponse, err kernel.ErrorCode) {
 	if req.Id == 0 {
 		return nil, constants.ParamsError.WithMessage("id 不能为空")
 	}
@@ -87,13 +87,13 @@ func (l *UserService) Info(req *types.UserInfoRequest) (result *types.UserInfoRe
 ```
 
 要点：
-- 返回值错误类型固定为 `kernel.ErrorCodeInterface`，业务失败返回 `app/constants` 中定义的错误码。
-- 日志一律用 `l.log`（已携带 trace 的 context），不要直接调 `logx.Info`。
+- 返回值错误类型固定为 `kernel.ErrorCode`（标准 `error` 实现），业务失败返回 `app/constants` 中定义的错误码，可用 `errors.Is(err, constants.ParamsError)` 判断。
+- 日志一律用 `s.log`（已携带 trace 的 context），不要直接调 `logx.Info`。
 
 若需新增错误码，在 `app/constants/error_code.go` 追加：
 
 ```go
-var ParamsError = &ErrorCode{Code: 1001, Message: "参数错误"}
+var ParamsError = NewErrorCode(1001, "参数错误")
 ```
 
 ## 4. 编写 Handler `app/controller/user_controller.go`
@@ -119,8 +119,8 @@ func UserInfoHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := service.NewUserService(r.Context(), svcCtx)
-		resp, err := l.Info(&req)
+		s := service.NewUserService(r.Context(), svcCtx)
+		resp, err := s.Info(&req)
 		kernel.Send(w, r, resp, err)
 	}
 }

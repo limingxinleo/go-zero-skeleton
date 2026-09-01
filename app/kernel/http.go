@@ -9,16 +9,17 @@ import (
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
-func Send(w http.ResponseWriter, r *http.Request, resp any, err ErrorCodeInterface) {
+func Send(w http.ResponseWriter, r *http.Request, resp any, err ErrorCode) {
 	var body types.Response[any]
 	if err != nil {
-		if err.Err() != nil {
-			logx.ErrorStack(err.Err())
+		if unwrapped := err.Unwrap(); unwrapped != nil {
+			// 底层错误只进日志（携带 trace），不暴露给客户端
+			logx.WithContext(r.Context()).Errorv(unwrapped)
 		}
 
 		body = types.Response[any]{
-			Code:    err.GetCode(),
-			Message: err.GetMessage(),
+			Code:    err.Code(),
+			Message: err.Message(),
 			TraceId: trace.TraceIDFromContext(r.Context()),
 		}
 	} else {

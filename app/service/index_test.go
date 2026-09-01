@@ -10,11 +10,12 @@ import (
 )
 
 func TestIndexService_Index(t *testing.T) {
-	service := NewIndexService(context.TODO(), app.GetApplication().ServiceContext)
+	s := NewIndexService(context.Background(), app.GetApplication().ServiceContext)
 
-	result, _ := service.Index(&types.FromRequest{
+	result, err := s.Index(&types.FromRequest{
 		Name: "limingxinleo",
 	})
 
+	assert.NoError(t, err)
 	assert.Equal(t, "Hi limingxinleo, welcome to main-api", result)
 }

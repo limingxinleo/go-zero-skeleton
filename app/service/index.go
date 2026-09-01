@@ -23,7 +23,7 @@ func NewIndexService(ctx context.Context, svcCtx *svc.ServiceContext) *IndexServ
 	}
 }
 
-func (l *IndexService) Index(req *types.FromRequest) (result string, err kernel.ErrorCodeInterface) {
-	result = fmt.Sprintf("Hi %s, welcome to %s", req.Name, l.svcCtx.Config.Name)
+func (s *IndexService) Index(req *types.FromRequest) (result string, err kernel.ErrorCode) {
+	result = fmt.Sprintf("Hi %s, welcome to %s", req.Name, s.svcCtx.Config.Name)
 	return
 }
