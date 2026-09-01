@@ -71,7 +71,7 @@ description: 基于 go-zero + Gorm + Redis 的 API 骨架开发指南。在此�
 注意：`main.api` 只是接口契约文档，与代码**手工保持同步**。骨架目录布局与 goctl 标准布局不同（service 而非 logic、types 平铺等），**不要用 goctl 直接生成覆盖现有代码**，新增接口按模板手写（见 `reference/new-endpoint.md`）。
 
 ### 代码风格：方法挂在 struct 上（类似 PHP 的类）
-业务代码（service、dao、各类 logic）**不写散落的包级函数**：一个业务单元定义一个 struct，所有方法都挂在该 struct 下面。固定模式 = struct + `NewXxx` 构造器，字段持有 `ctx`、`log`（`logx.WithContext(ctx)`）及依赖（`svcCtx`、`*gorm.DB` 等），方法写成 `func (l *XxxService) Method(...)`。新建文件可用 go-gen 生成骨架，或按下节模板手写——**无论哪种方式，结构必须一致**，再往 struct 上追加方法。controller 的 Handler 函数与 `app/kernel` 框架代码不受此约束。
+业务代码（service、dao、各类 logic）**不写散落的包级函数**：一个业务单元定义一个 struct，所有方法都挂在该 struct 下面。固定模式 = struct + `NewXxx` 构造器，字段持有 `ctx`、`log`（`logx.WithContext(ctx)`）及依赖（`svcCtx`、`*gorm.DB` 等），方法写成 `func (l *XxxService) Method(...)`。新建文件可用 go-gen 生成骨架，或按下节模板手写——**无论哪种方式，结构必须一致**，再往 struct 上追加方法。仅中间件、`NewContext` 等确需函数形态的入口除外；controller 的 Handler 函数不受此约束。
 
 ### 最小文件策略：一个文件一个职责
 **新逻辑新建专属文件，不往职责不符的现有文件里追加**；文件名即职责名。适用于所有目录（service、types、kernel 等）。例如新增用户登录态（存储 token 与 user_id）：不要写进 `app/kernel/ctx/context.go`（该文件只处理基础上下文 + 日志），而应新建 `app/kernel/ctx/user_auth.go`，并同样遵循 struct 风格：

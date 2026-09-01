@@ -27,11 +27,3 @@ func (c *ContextContainer) Logger() logx.Logger {
 func NewContext(cc context.Context) context.Context {
 	return context.WithValue(cc, KeyLogger, logx.WithContext(cc))
 }
-
-func Logger(cc context.Context) logx.Logger {
-	if logger, ok := cc.Value(KeyLogger).(logx.Logger); ok {
-		return logger
-	}
-
-	return logx.WithContext(cc)
-}
