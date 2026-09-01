@@ -25,7 +25,7 @@ service main-api {
 
 ## 2. 定义 DTO `app/types/`
 
-可追加到 `types.go`，或按模块新建 `app/types/user.go`（`package types`）：
+按模块新建 `app/types/user.go`（`package types`），不要把所有 DTO 都堆进 `types.go`（最小文件策略，见 SKILL.md）：
 
 ```go
 package types
@@ -45,6 +45,8 @@ type UserInfoResponse struct {
 - 注意：`types.go` 中的 `Response[T]` 为统一响应包装，由 `kernel.Send` 使用，勿动。
 
 ## 3. 编写 Service `app/service/user.go`
+
+已安装 go-gen（可选脚手架）可在项目根目录执行 `go-gen gen service name=UserService` 生成骨架，生成后追加 `Info` 方法即可；未安装则直接手写以下代码（与生成产物结构一致）：
 
 ```go
 package service

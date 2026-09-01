@@ -1,6 +1,6 @@
 ---
 name: go-zero-skeleton
-description: 基于 go-zero + Gorm + Redis 的 API 骨架开发指南。在此项目中新增 HTTP 接口、编写 service 业务逻辑、生成或使用数据库模型、新增 GRPC 服务、添加配置项或错误码、编写单元测试、本地运行调试，以及从骨架初始化新项目时使用。
+description: 基于 go-zero + Gorm + Redis 的 API 骨架开发指南。在此项目中新增 HTTP 接口、编写 service 业务逻辑、生成或使用数据库模型、新增 GRPC 服务、添加配置项或错误码、编写单元测试、本地运行调试、使用 go-gen 脚手架生成代码文件，以及从骨架初始化新项目时使用。
 ---
 
 # go-zero-skeleton 开发指南
@@ -70,6 +70,111 @@ description: 基于 go-zero + Gorm + Redis 的 API 骨架开发指南。在此�
 
 注意：`main.api` 只是接口契约文档，与代码**手工保持同步**。骨架目录布局与 goctl 标准布局不同（service 而非 logic、types 平铺等），**不要用 goctl 直接生成覆盖现有代码**，新增接口按模板手写（见 `reference/new-endpoint.md`）。
 
+### 代码风格：方法挂在 struct 上（类似 PHP 的类）
+业务代码（service、dao、各类 logic）**不写散落的包级函数**：一个业务单元定义一个 struct，所有方法都挂在该 struct 下面。固定模式 = struct + `NewXxx` 构造器，字段持有 `ctx`、`log`（`logx.WithContext(ctx)`）及依赖（`svcCtx`、`*gorm.DB` 等），方法写成 `func (l *XxxService) Method(...)`。新建文件可用 go-gen 生成骨架，或按下节模板手写——**无论哪种方式，结构必须一致**，再往 struct 上追加方法。controller 的 Handler 函数与 `app/kernel` 框架代码不受此约束。
+
+### 最小文件策略：一个文件一个职责
+**新逻辑新建专属文件，不往职责不符的现有文件里追加**；文件名即职责名。适用于所有目录（service、types、kernel 等）。例如新增用户登录态（存储 token 与 user_id）：不要写进 `app/kernel/ctx/context.go`（该文件只处理基础上下文 + 日志），而应新建 `app/kernel/ctx/user_auth.go`，并同样遵循 struct 风格：
+
+```go
+// app/kernel/ctx/user_auth.go —— 用户登录态（token + user_id）
+package ctx
+
+import "context"
+
+type UserAuth struct {
+	ctx context.Context
+}
+
+func NewUserAuth(ctx context.Context) *UserAuth {
+	return &UserAuth{ctx: ctx}
+}
+
+// 方法按需追加（如 Token() / UserId()），全部挂在 UserAuth 上
+```
+
+此文件可用 `go-gen gen file name=UserAuth path=app/kernel/ctx` 生成（package 自动取 path 末段 `ctx`）。同一 package 下多文件共存，import 不变。例外：错误码（`app/constants/error_code.go`）、路由注册（`app/controller/routes.go`）等集中式定义，按既有约定继续在原文件追加。
+
+### 脚手架 go-gen：生成代码文件（可选）
+创建新的 service / dao / struct 文件时，若已安装 [go-gen](https://github.com/limingxinleo/go-gen) 则优先用它生成骨架（须在项目根目录执行）。**未安装时不必安装，直接按本节末尾的模板手写**，风格保持一致：
+
+```bash
+go install github.com/limingxinleo/go-gen@v1.3.4   # 安装（可选，仅一次）
+```
+
+常用命令：
+
+```bash
+go-gen gen service name=UserService             # → app/service/user_service.go（含 svcCtx；import 自动使用 go.mod 的 module 名）
+go-gen gen gorm_dao name=UserDao                # → app/dao/user_dao.go（手写 Gorm DAO 骨架，持有 *gorm.DB）
+go-gen gen dao name=UserDao                     # → app/dao/user_dao.go（手写 sqlx DAO 骨架，持有 sqlx.SqlConn）
+go-gen gen file name=OrderLogic path=app/logic  # → app/logic/order_logic.go（通用 struct 骨架，package 取 path 末段）
+```
+
+行为要点：
+- 文件名由 `name` 自动转 snake_case（`UserService` → `user_service.go`）。
+- 目标文件已存在时直接报错拒绝覆盖；确认要覆盖加 `-f`。
+- stub 模板缩进不完全规范，生成后执行 `gofmt -w <文件>` 统一格式。
+- `dao` / `gorm_dao` 生成的是手写 DAO（package dao），与 `gen:model` 生成的 `app/dao/model` + `app/dao/query`（主推方式，见 `reference/database.md`）互不冲突，按需选用。
+- `go-gen json2struct` 可将 JSON 转为 Go struct（`-s 'JSON串'`、`-f 文件`、`-c` 读剪贴板并写回），编写 `app/types` DTO 时可用。
+- `go-gen config:create` 在项目下生成 `.go-gen/config.json` 与 stub 模板，可自定义生成规则；配置查找顺序：`./.go-gen/` → `~/.go-gen/` → 工具内置默认。
+
+**未安装 go-gen 时，直接按以下模板手写**（与 go-gen 生成产物完全一致；`service` 模板见 `reference/new-endpoint.md` 第 3 步）：
+
+```go
+// app/dao/user_dao.go —— gorm_dao 模板（Gorm 手写 DAO）
+package dao
+
+import (
+	"context"
+
+	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/gorm"
+)
+
+type UserDao struct {
+	db  *gorm.DB
+	ctx context.Context
+	log logx.Logger
+}
+
+func NewUserDao(db *gorm.DB, ctx context.Context) *UserDao {
+	return &UserDao{
+		db:  db,
+		ctx: ctx,
+		log: logx.WithContext(ctx),
+	}
+}
+```
+
+```go
+// app/dao/user_dao.go —— dao 模板（sqlx 手写 DAO，差异：字段与构造参数为 sqlx.SqlConn）
+package dao
+
+import (
+	"context"
+
+	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/stores/sqlx"
+)
+
+type UserDao struct {
+	sqlConn sqlx.SqlConn
+	ctx     context.Context
+	log     logx.Logger
+}
+
+func NewUserDao(sqlConn sqlx.SqlConn, ctx context.Context) *UserDao {
+	return &UserDao{
+		sqlConn: sqlConn,
+		ctx:     ctx,
+		log:     logx.WithContext(ctx),
+	}
+}
+```
+
+`file` 模板最简：目标 package 下仅含 `ctx` 字段的 struct + `NewXxx(ctx context.Context)` 构造器，按需补依赖字段即可。
+
 ## 任务路由
 
 | 任务 | 参考文档 |
@@ -86,6 +191,7 @@ description: 基于 go-zero + Gorm + Redis 的 API 骨架开发指南。在此�
 go run main.go                            # 启动 HTTP 服务（需本地 MySQL/Redis 可达）
 go run cmd/main.go gen:model              # 从数据库生成全部表的 Gorm dao
 go run cmd/main.go gen:model user         # 仅生成指定表（可多个表名）
+go-gen gen service name=UserService       # go-gen（可选脚手架）生成 service 骨架，另有 gorm_dao / dao / file
 ROOT_PATH=$PWD go test ./... -v           # 本地跑单测（需 MySQL/Redis 可达，ROOT_PATH 必加，见下）
 docker compose up -d --build              # 完整栈：MySQL + Redis + 应用（部署镜像）
 DOCKERFILE=unit.Dockerfile docker compose up -d --build   # 单测环境镜像（含 Go 工具链）

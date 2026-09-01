@@ -2,6 +2,7 @@ package ctx
 
 import (
 	"context"
+
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -16,7 +17,11 @@ func NewContextContainer(ctx context.Context) *ContextContainer {
 }
 
 func (c *ContextContainer) Logger() logx.Logger {
-	return Logger(c.ctx)
+	if logger, ok := c.ctx.Value(KeyLogger).(logx.Logger); ok {
+		return logger
+	}
+
+	return logx.WithContext(c.ctx)
 }
 
 func NewContext(cc context.Context) context.Context {
