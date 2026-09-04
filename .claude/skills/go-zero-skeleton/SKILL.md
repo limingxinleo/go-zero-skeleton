@@ -187,6 +187,132 @@ func NewUserDao(sqlConn sqlx.SqlConn, ctx context.Context) *UserDao {
 | 新增 GRPC 服务端 / 客户端调用 | `reference/grpc.md` |
 | 单元测试编写、本地运行与调试 | `reference/testing-local.md` |
 
+## 常用的组件库：samber/lo
+
+[github.com/samber/lo](https://github.com/samber/lo) 是基于 Go 泛型的函数式工具库（`Map`/`Filter`/指针操作/集合运算等），一行泛型调用即可替代手写循环与样板代码，减少 service 层噪音。**它是可选依赖、不是骨架标配**——当前仅以 `// indirect` 形式出现在 `go.mod`（由其它依赖间接带入），骨架自身的 `app/` 代码并不 import 它。
+
+### 安装判断：先判断值不值得用，再决定是否引入
+
+**除非命中下表的场景且一次开发中会多处用到，否则不要引入**；单点、一次的简单转换直接用原生写法（`&x`、`for range`）即可，避免为「套库」而引入没必要的新依赖。口径如下：
+
+- ✅ 值得引入：多处列表 DTO 转换、可空字段批量转换、集合去重/分组/求交、批量 `IN` 前清理参数；
+- ❌ 不值得引入：一次性取一个值转指针、单层 for 循环加条件——手写几行更直白；
+- 确认要用的执行（把 indirect 依赖转为直接依赖）：
+
+```bash
+go get github.com/samber/lo@v1.53.0 && go mod tidy
+```
+
+之后在任意文件 `import "github.com/samber/lo"`，以 `lo.xxx` 调用。
+
+### 场景快查表
+
+| 场景 | 推荐函数 | 典型用途 |
+|---|---|---|
+| 值类型 → Gorm 可空字段（零值→NULL） | `lo.EmptyableToPtr(x)` | `string`/`int64`/`time.Time` → `*string` 等 |
+| 值类型 → 指针（无条件） | `lo.ToPtr(x)` | 空串也要落库为 `''`（而非 NULL）时 |
+| 可空字段 → 值类型（nil→零值） | `lo.FromPtr(p)` | `*string` → 响应 DTO 的 `string` |
+| 可空字段 → 值类型（nil→兜底值） | `lo.FromPtrOr(p, fallback)` | 昵称为空时兜底「未设置」 |
+| 列表 DTO 转换 | `lo.Map` / `lo.FilterMap` / `lo.FlatMap` | DAO `[]model.*` → `[]*types.XxxResp` |
+| 集合去重 / 交并 / 包含 | `lo.Uniq` / `lo.UniqBy` / `lo.Contains` / `lo.Every` | 参数去重后再查库 |
+| 按字段分组 / 切块 | `lo.GroupBy` / `lo.Chunk` | 类目分组、批量 INSERT 分批 |
+| 列表 → map 索引 | `lo.KeyBy` | O(1) 查找、批量填充 |
+| map 取键值 / 转换 / 筛选 | `lo.Keys` / `lo.Values` / `lo.MapValues` / `lo.PickBy` | 稳定遍历、类型转换 |
+| 内联判断（替代三目运算） | `lo.Ternary` / `lo.If(cond, a).Else(b)` | 参数上限、状态文案 |
+| 第一个非零值 | `lo.CoalesceOrEmpty(a, b, c)` | 多来源取兜底 |
+| 安全取首/末元素 | `lo.First` / `lo.FirstOr` / `lo.Last` / `lo.LastOr` | 空集合不 panic |
+| 聚合 / 随机码 | `lo.SumBy` / `lo.MaxBy` / `lo.MinBy` / `lo.CountBy` / `lo.RandomString` | 金额求和、验证码/短码 |
+
+### 场景一：Gorm 可空字段 ↔ 值类型（最常用，务必掌握）
+
+`gen:model` 对**允许为 NULL** 的字段生成的模型类型是**指针**，而请求参数通常是非指针值类型，双向转换是最高频使用点：
+
+```go
+// 写：请求 string → 模型 *string。空串转 nil（落库 NULL），非空才转指针
+user.UnionID = lo.EmptyableToPtr(req.UnionID)
+
+// 若业务要求空串也必须落库为 ''（而非 NULL），用无条件转指针
+user.UnionID = lo.ToPtr(req.UnionID)
+
+// 读：模型 *string → 响应 DTO 的 string（nil 自动归一为零值，不会给前端写 null）
+resp.UnionID = lo.FromPtr(user.UnionID)
+// 读且 nil 时要兜底值
+resp.Nickname = lo.FromPtrOr(user.Nickname, "未设置")
+// 批量：[]*T → []T（nil 元素取零值）
+tags := lo.FromSlicePtrOr(model.Tags, "")
+```
+
+> ⚠️ `EmptyableToPtr` 依据**零值**判定（空串/0/零时间/空结构体 → nil，其余 → 指针），由泛型 + reflect 实现、纯函数无副作用。若零值有业务语义、必须保留为值落库，请改用 `ToPtr`。
+
+### 场景二：列表接口的 DTO 转换（service 层高频）
+
+分页列表 DAO 返回 `[]model.*`，不能直接返回给前端，需转 `[]*types.XxxResp`，`lo.Map` 一行完成：
+
+```go
+list := lo.Map(models, func(m *model.User, _ int) *types.UserResp {
+    return &types.UserResp{
+        Id:       m.ID,
+        Nickname: lo.FromPtr(m.Nickname), // 可空字段顺带解引用
+        // ...
+    }
+})
+```
+
+转换同时过滤保留项用 `lo.FilterMap`（callback 返回 `(R, bool)`）；把嵌套切片结果拍平用 `lo.FlatMap`。
+
+### 场景三：ID / 标签集合处理
+
+```go
+// 请求参数去重后再批量查库
+ids := lo.Uniq(req.Ids)
+db.Where("id IN ?", ids).Find(&users)
+
+// IN 查询前按白名单筛掉不合法 id
+ids = lo.Filter(ids, func(id int64, _ int) bool { return lo.Contains(allowedIDs, id) })
+
+// 按字段分组（如商品按类目分组）
+categorized := lo.GroupBy(goods, func(g *model.Goods) int64 { return g.CategoryID })
+
+// 列表 → map 索引，O(1) 取用（如按用户ID批量填充昵称）
+userMap := lo.KeyBy(users, func(u *model.User) int64 { return u.ID })
+
+// 大批量 INSERT/UPSERT 会拼超长 SQL，分批执行
+for _, batch := range lo.Chunk(items, 500) {
+    db.CreateInBatches(batch, 500)
+}
+```
+
+### 场景四：map 的稳定遍历与转换
+
+Go map 原生遍历无序，需要稳定顺序时先取 key 再排序；map 值转换、筛选也用 lo：
+
+```go
+keys := lo.Keys(m)                                  // 全部 key；需要有序时自行 sort
+vals := lo.Values(m)                                // 全部 value
+m2 := lo.MapValues(m, func(v string, k string) int { return len(v) })
+sub := lo.PickBy(m, func(k string, v any) bool { return strings.HasPrefix(k, "official_") })
+```
+
+### 场景五：内联判断与兜底（替代三目运算）
+
+Go 无三目表达式，短判断用 `lo.If` / `lo.Ternary` 可避免临时变量：
+
+```go
+sex := lo.If(u.Gender == 1, "男").Else("女")
+limit := lo.Ternary(pageSize > 100, 100, pageSize)            // 参数上限兜底
+name := lo.CoalesceOrEmpty(profile.Nickname, req.Name, "游客") // 第一个非零值兜底
+first := lo.FirstOr(items, zero)                              // 空集合安全取首
+```
+
+### 场景六：聚合与随机码
+
+```go
+total := lo.SumBy(orders, func(o *model.Order) int64 { return o.Amount })             // 金额求和
+best := lo.MaxBy(orders, func(a, b *model.Order) bool { return a.Amount > b.Amount }) // 最大金额订单
+done := lo.CountBy(orders, func(o *model.Order) bool { return o.Status == 2 })        // 满足条件计数
+code := lo.RandomString(6, []rune("0123456789"))                                      // 随机验证码/短码
+```
+
 ## 常用命令速查
 
 ```bash
