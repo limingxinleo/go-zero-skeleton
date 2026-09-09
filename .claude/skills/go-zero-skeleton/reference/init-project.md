@@ -15,6 +15,7 @@ git grep -l 'github.com/limingxinleo/go-zero-skeleton' | xargs sed -i '' 's|gith
 
 - `etc/main-api.yaml` 与 `etc/unit-api.yaml`：`Name` 改为新服务名（该值会被 CLI 根命令、日志等引用）。
 - 按需调整 `Port`、`RedisConf`、`MySqlConf.Dsn`（默认库名 `hyperf` 也建议改掉，并同步 `docker-compose.yml` 的 `MYSQL_DATABASE`）。
+- **确认本条 Redis key 全局前缀**：由于禁用 Redis 物理 db 隔离，新项目所有 Redis key 一律经 `RedisKey(key)` 拼出 `{RedisPrefix}:{key}`（见 SKILL.md「Redis key 全局前缀」，**骨架不预置该机制**）。此处**由用户手动输入一次**新前缀，按模板新建 `app/constants/redis.go` 并写入 `RedisPrefix`；新项目全局沿用该前缀，不要猜测默认值。
 
 ## 3. Docker Compose
 

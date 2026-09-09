@@ -59,6 +59,31 @@ description: 基于 go-zero + Gorm + Redis 的 API 骨架开发指南。在此�
 - `WithError(err)` 附加底层错误（仅写入日志，不暴露给客户端）；`WithMessage(msg)` 覆盖对外提示。**两者均返回新副本、不修改原错误码**——错误码是全局单例，原地修改会在并发请求间互相覆盖（数据竞争），严禁改回「返回自身」的写法。
 - 新错误码按业务模块分段编号，不要复用已有 Code。
 
+### Redis key 全局前缀（强制）
+
+本项目 **禁用 Redis 物理 db（`DB` 索引）隔离业务**。go-zero 官方不推荐依赖 db 做隔离：多 db 仅在单机 legacy 模式可用，Cluster 集群连接固定走 db 0，隔离一旦绑定部署形态，换环境、扩集群即失效；且当前 go-zero 版本的 `RedisConf` 也**已移除 `DB` 配置项**（连接固定 db 0）。因此 Redis 一律使用 db 0，**业务隔离统一通过 key 全局前缀实现**：
+
+- 前缀是**全项目仅一条的全局约定**（隔离单元是整个服务 / 整套部署），不要按业务、按模块分别编多个前缀。骨架**不预置该机制**，由使用方按下方模板在项目内落地。
+- **所有 Redis key 一律经统一拼接函数取 key**，得到 `{RedisPrefix}:{key}`（冒号连接）。读写 Redis 及盘点既有 key 时直接调用它，**不要手写字符串拼 key**，杜绝漏加前缀破坏隔离。
+- 前缀取值**由用户显式指定**：从骨架初始化新项目或当前既无既定前缀时，**必须停下来让用户手动输入一次**，并按下方模板写入项目内常量；一经写入即是全局约定，**此后所有 Redis 操作直接沿用、不再重复询问**。不要猜测未确认过的前缀，也不要套用其它默认值。
+
+落地模板（项目内新建 `app/constants/redis.go`，`import` 以 `go.mod` 的 `module` 名为准）：
+
+```go
+package constants
+
+// RedisPrefix 全局 Redis key 前缀，所有 Redis key 均为 "{RedisPrefix}:{业务key}"。
+// 初始化新项目时由用户手动输入一次，替换下面示例值；此后全项目沿用。
+const RedisPrefix = "my-project" // 初始化时替换为你确认的前缀
+
+// RedisKey 统一拼接全局前缀，所有 Redis 读写一律经此取 key，禁止手写拼 key。
+func RedisKey(key string) string {
+	return RedisPrefix + ":" + key
+}
+```
+
+具体写法与 `redis.Nil` 处理见 `reference/database.md`「Redis」。
+
 ### 分层约束
 | 目录 | 职责 | 禁止 |
 |---|---|---|
@@ -183,7 +208,7 @@ func NewUserDao(sqlConn sqlx.SqlConn, ctx context.Context) *UserDao {
 |---|---|
 | 从骨架初始化新项目（module/服务名/CI 改名清单） | `reference/init-project.md` |
 | 新增 HTTP 接口（api/types/service/controller/routes 全流程模板） | `reference/new-endpoint.md` |
-| 数据库：建表、gen:model 生成 dao、Gorm/sqlx 查询、事务；Redis 读写（`redis.Nil` 处理） | `reference/database.md` |
+| 数据库：建表、gen:model 生成 dao、Gorm/sqlx 查询、事务；Redis 读写（key 全局前缀、`redis.Nil` 处理） | `reference/database.md` |
 | 新增 GRPC 服务端 / 客户端调用 | `reference/grpc.md` |
 | 单元测试编写、本地运行与调试 | `reference/testing-local.md` |
 

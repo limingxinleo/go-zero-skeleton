@@ -86,15 +86,20 @@ err := app.GetApplication().Gorm.WithContext(ctx).
 
 go-zero 的 Redis 为双轨 API：本项目统一使用**带 ctx 的 `XxxCtx` 方法**（与 goctl 生成产物、Go 主流「所有 IO 调用传递 ctx」规范一致），保证 trace 链路完整、调用可随 ctx 超时取消。无 ctx 变体仅在确实拿不到 context 的极少数场景使用。
 
-```go
-rds := app.GetApplication().Redis
+**key 全局前缀（强制）**：本项目 **禁用 Redis 物理 db 隔离业务**（go-zero 官方不推荐：多 db 仅单机 legacy 模式可用、Cluster 集群连接固定 db 0，当前版本的 `RedisConf` 也已移除 `DB` 配置项），连接一律 db 0。业务隔离统一走 **key 全局前缀**——按 SKILL.md「Redis key 全局前缀」模板在项目内提供 `RedisPrefix` 常量与 `RedisKey(key)` 统一拼接，**所有 key 均形如 `{RedisPrefix}:{业务key}`**、经 `RedisKey` 取 key，禁止手写拼 key：
 
-val, err := rds.GetCtx(ctx, "key")             // key 不存在时返回 redis.Nil
-err = rds.SetCtx(ctx, "key", "value")          // 无过期时间
-err = rds.SetexCtx(ctx, "key", "value", 3600)  // 带过期时间（秒）
-n, err := rds.DelCtx(ctx, "key1", "key2")
-ok, err := rds.ExistsCtx(ctx, "key")
-n, err := rds.IncrCtx(ctx, "counter")
+```go
+import "your-module/app/constants" // 项目内按模板实现的 constants 包，import 前缀以 go.mod 的 module 名为准
+// 前缀由用户在初始化时手动输入一次写入 constants.RedisPrefix，此后全局沿用
+rds := app.GetApplication().Redis
+key := constants.RedisKey("user:test")                           // "{RedisPrefix}:user:test"
+
+val, err := rds.GetCtx(ctx, key)             // key 不存在时返回 redis.Nil
+err = rds.SetCtx(ctx, key, "value")          // 无过期时间
+err = rds.SetexCtx(ctx, key, "value", 3600)  // 带过期时间（秒）
+n, err := rds.DelCtx(ctx, key, constants.RedisKey("user:other"))
+ok, err := rds.ExistsCtx(ctx, key)
+n, err := rds.IncrCtx(ctx, constants.RedisKey("counter"))
 ```
 
 **key 不存在的处理（必读）**：`Get` 在 key 不存在时返回 `("", redis.Nil)`。`redis.Nil` 是预期内的哨兵错误而非服务故障，必须单独排除，否则接口会对空 key 误报 500：
@@ -106,7 +111,7 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/redis"
 )
 
-val, err := app.GetApplication().Redis.GetCtx(ctx, "test")
+val, err := app.GetApplication().Redis.GetCtx(ctx, constants.RedisKey("test")) // 统一经 constants.RedisKey 取 key
 if err != nil && !errors.Is(err, redis.Nil) {
 	return "", constants.ServerError.WithError(err)
 }
