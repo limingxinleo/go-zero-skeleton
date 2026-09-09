@@ -14,7 +14,7 @@ func Send(w http.ResponseWriter, r *http.Request, resp any, err ErrorCode) {
 	if err != nil {
 		if unwrapped := err.Unwrap(); unwrapped != nil {
 			// 底层错误只进日志（携带 trace），不暴露给客户端
-			logx.WithContext(r.Context()).Errorv(unwrapped)
+			logx.WithContext(r.Context()).Errorw(err.Message(), logx.Field("err", unwrapped))
 		}
 
 		body = types.Response[any]{
