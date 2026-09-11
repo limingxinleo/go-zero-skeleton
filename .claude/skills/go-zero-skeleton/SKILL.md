@@ -24,7 +24,7 @@ description: 基于 go-zero + Gorm + Redis 的 API 骨架开发指南。在此�
     ├── types/           # 请求/响应 DTO
     ├── service/         # 业务逻辑层（单元测试也放在此，与被测文件同目录）
     ├── svc/             # ServiceContext 依赖容器
-    ├── constants/       # 错误码等业务常量
+    ├── constants/       # 错误码、软删除取值等业务常量
     ├── dao/             # gen:model 生成产物：model/ + query/（勿手改）
     ├── model/           # goctl model 原生方式生成产物（可选）
     └── kernel/          # 框架支撑：Send 统一响应 / 错误码接口 / 中间件 / ctx / gorm logger
@@ -83,6 +83,26 @@ func RedisKey(key string) string {
 ```
 
 具体写法与 `redis.Nil` 处理见 `reference/database.md`「Redis」。
+
+### MySQL 软删除（强制）
+
+**禁止物理删除任何业务数据**。有删除需求的表必须增加 `is_deleted` 字段，取值仅 `0`/`1`、建表默认 `0`。**删除一律为软删除**——把目标行的 `is_deleted` 置为 `constants.Yes`（`1`）；严禁 Gorm `Delete` / `Unscoped().Delete` / 手写 `DELETE FROM ...`（连同 `TRUNCATE`）物理删行。
+
+- **取值一律走常量，禁止在代码里手写魔法值 `0`/`1`**。按下方模板在项目内新建 `app/constants/soft_delete.go`：`constants.No`（未删除）是所有查询的默认过滤值、`constants.Yes`（已删除）是删除时的置值。该约定全项目通用、不依赖用户输入，按模板直接落地即可（骨架未预置、由使用方落地）。
+- **所有查询默认都要追加「未删除」条件** `where("is_deleted", constants.No)`（Gorm gen 对应 `Where(model.IsDeleted.Eq(constants.No))`），覆盖查询单条、列表、计数、`IN`、`JOIN` 等一切取数路径。仅确实需要查已删数据的场景（软删恢复校验、审计回查等）才显式去掉或不查该条件。
+- 建表 DDL、三种 DAO 方式的查询/软删写法、事务内用法与唯一索引注意事项见 `reference/database.md`「软删除」。
+
+落地模板（项目内新建 `app/constants/soft_delete.go`，`import` 以 `go.mod` 的 `module` 名为准）：
+
+```go
+package constants
+
+// 软删除标记字段 is_deleted 的取值。业务数据禁止物理删除，删除 = 将 is_deleted 置为 Yes。
+const (
+    No  = 0 // 未删除：新建默认值，也是所有查询的默认过滤条件
+    Yes = 1 // 已删除：软删除时置此值
+)
+```
 
 ### 分层约束
 | 目录 | 职责 | 禁止 |
@@ -208,7 +228,7 @@ func NewUserDao(sqlConn sqlx.SqlConn, ctx context.Context) *UserDao {
 |---|---|
 | 从骨架初始化新项目（module/服务名/CI 改名清单） | `reference/init-project.md` |
 | 新增 HTTP 接口（api/types/service/controller/routes 全流程模板） | `reference/new-endpoint.md` |
-| 数据库：建表、gen:model 生成 dao、Gorm/sqlx 查询、事务；Redis 读写（key 全局前缀、`redis.Nil` 处理） | `reference/database.md` |
+| 数据库：建表、gen:model 生成 dao、软删除（is_deleted 常量与查询/软删写法）、Gorm/sqlx 查询、事务；Redis 读写（key 全局前缀、`redis.Nil` 处理） | `reference/database.md` |
 | 新增 GRPC 服务端 / 客户端调用 | `reference/grpc.md` |
 | 单元测试编写、本地运行与调试 | `reference/testing-local.md` |
 

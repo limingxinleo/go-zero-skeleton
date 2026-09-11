@@ -13,6 +13,97 @@
 2. 对已运行的库，也可直接在 MySQL 中执行 DDL，或手动重建：`docker compose down -v && docker compose up -d --build`（`-v` 会清空数据卷，谨慎使用）。
 3. 执行 `go run cmd/main.go gen:model` 生成代码。
 
+## 软删除（强制）
+
+**禁止物理删除业务数据**。有删除需求的表一律增加 `is_deleted` 字段：删除 = 将该行 `is_deleted` 置 `1`（软删），查询活跃数据默认先过滤 `is_deleted = 0`。严禁 Gorm `Delete` / `Unscoped().Delete` / 手写 `DELETE FROM ...` / `TRUNCATE`（相关强制约定与常量模板见 SKILL.md「MySQL 软删除」，本节给具体写法）。
+
+先按 SKILL.md 模板在项目内落地 `app/constants/soft_delete.go`，取值一律走常量、不写魔法值：
+
+```go
+package constants
+
+const (
+    No  = 0 // 未删除：新建默认值，所有查询的默认过滤条件
+    Yes = 1 // 已删除：软删除时置此值
+)
+```
+
+### 建表
+
+DDL 统一写入 `.github/init.sql`（见「建表流程」），`is_deleted` 列建议带索引（几乎所有查询都过滤它）：
+
+```sql
+CREATE TABLE `user` (
+  `id`          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `nick_name`   VARCHAR(64)  NOT NULL DEFAULT '',
+  `is_deleted`  TINYINT      NOT NULL DEFAULT 0 COMMENT '是否已删除：0-未删除，1-已删除',
+  PRIMARY KEY (`id`),
+  KEY `idx_is_deleted` (`is_deleted`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+```
+
+不含删除需求的表可不用该字段；一旦加了，全项目按本节规范执行。`gen:model` 会把它生成为模型的 `IsDeleted` 字段（字节类型），与 `constants.No / constants.Yes` 比较即可。
+
+### 查询：默认过滤未删除
+
+**所有查询默认追加未删除条件。** 本章其余示例为保持简洁均省略了该条件，实际开发必须加上。
+
+方式一（Gorm gen，骨架主推）：
+
+```go
+q := query.Use(app.GetApplication().Gorm)
+
+// 单条
+u, err := q.User.WithContext(s.ctx).
+    Where(q.User.IsDeleted.Eq(constants.No)).
+    First()
+
+// 列表（与其它条件叠加）
+users, err := q.User.WithContext(s.ctx).
+    Where(q.User.Status.Eq(1), q.User.IsDeleted.Eq(constants.No)).
+    Find()
+```
+
+方式二/三（sqlx 直接 SQL / Gorm 手写 DAO）：SQL 里补 `is_deleted = ?`，参数传 `constants.No`；或 Gorm 用 `Where(...).Where("is_deleted", constants.No)`：
+
+```go
+// sqlx
+err := app.GetApplication().MySQL.QueryRowCtx(ctx, &nickName,
+    "SELECT nick_name FROM user WHERE id = ? AND is_deleted = ?", id, constants.No)
+
+// Gorm 原生
+err = app.GetApplication().Gorm.WithContext(ctx).
+    Where("status = ? AND is_deleted = ?", status, constants.No).
+    Find(&users).Error
+```
+
+### 删除：一律软删
+
+把目标行 `is_deleted` 置为 `constants.Yes`，**不允许** `db.Delete(&u)`、`Unscoped().Delete(&u)` 或手写 `DELETE FROM ...`：
+
+```go
+// Gorm gen：Update 字段置 1（先按未删除条件定位到行，避免对已删行重复标记）
+info, err := q.User.WithContext(s.ctx).
+    Where(q.User.ID.Eq(id), q.User.IsDeleted.Eq(constants.No)).
+    Update(q.User.IsDeleted, constants.Yes)
+if err != nil {
+    return constants.ServerError.WithError(err)
+}
+if info.RowsAffected == 0 {
+    // 目标不存在或已是软删状态，按业务处理
+}
+
+// Gorm 原生
+err = app.GetApplication().Gorm.WithContext(ctx).
+    Model(&model.User{}).
+    Where("id = ? AND is_deleted = ?", id, constants.No).
+    Update("is_deleted", constants.Yes).Error
+```
+
+事务内一致：`db.Transaction` 中用 `query.Use(tx)` 生成查询对象后，同样追加 `IsDeleted.Eq(constants.No)`/软删 Update，见「事务」。
+
+> ⚠️ 唯一索引注意：软删后行仍占用唯一键，同自然键的新数据会插入失败。若业务允许「删除后同键重建」，不要把唯一索引建在自然键上（考虑去掉或用 `is_deleted` 参与联合唯一等方案）。
+
 ## 方式一：Gorm + gen 生成 dao（骨架主推）
 
 ```bash
