@@ -16,7 +16,8 @@ RUN go mod download
 
 COPY . .
 COPY ./etc /app/etc
-RUN go build -ldflags="-s -w" -o /app/main .
+RUN go build -ldflags="-s -w" -o /app/main . \
+    && go build -ldflags="-s -w" -o /app/cli "./cmd"
 
 
 FROM scratch
@@ -31,6 +32,7 @@ ENV TZ=Asia/Shanghai \
 WORKDIR /app
 
 COPY --from=builder /app/main /app/main
+COPY --from=builder /app/cli /app/cli
 COPY --from=builder /app/etc /app/etc
 
 CMD ["./main"]
