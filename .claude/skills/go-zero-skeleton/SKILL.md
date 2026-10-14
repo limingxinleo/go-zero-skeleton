@@ -104,6 +104,32 @@ const (
 )
 ```
 
+### 数据库字段变更流程（强制）
+
+开发过程中需要**新增或修改数据库字段**时，必须遵循「先改库 → 再重生成模型 → 最后写业务代码」的顺序，**绝对不能先写引用新字段的代码**。
+
+#### 为什么必须这样做
+
+骨架的 DAO 模型（`app/dao/model/` + `app/dao/query/`）完全由 `go run cmd/main.go gen:model` 从数据库表结构生成。如果字段还没加到数据库里，就直接在 service / types 里写 `model.Xxx.NewField`，编译会立刻报错。而 `gen:model` 本身是通过 `go run cmd/main.go` 执行的——**编译不过，连 gen:model 命令都跑不起来**，形成死锁。
+
+#### 标准流程（推荐）
+
+1. **先给出 ALTER 语句**，让开发者在数据库中执行（或写入 `.github/init.sql` 后重建库）。
+2. 开发者执行 `go run cmd/main.go gen:model` 重新生成模型代码，新字段出现在 `app/dao/model/` 和 `app/dao/query/` 中。
+3. 之后再进行业务代码开发（service / controller / types 等），此时引用新字段不会编译错。
+
+> 建表场景同理：先写 CREATE TABLE 并执行，再 `gen:model`，再写业务代码。见 `reference/database.md`「建表流程」。
+
+#### 变通方案：先手动改 model 代码，事后刷新 gen:model
+
+如果确实需要先推进代码（比如字段改动很小、希望一次性提交），可以**直接手动修改 `app/dao/model/` 下对应的模型结构体**（补上字段、标签与类型），让编译通过、业务代码能先写起来。**严禁修改 `app/dao/query/` 下的生成代码**（查询方法是批量生成的，手动维护成本极高且容易出错）。
+
+采用此方案时，必须在提交 / 收尾阶段提醒开发者：
+
+> 已手动补了 model 结构体字段，请在数据库执行完 ALTER 后，运行 `go run cmd/main.go gen:model` 重新生成一次，确保 model / query 与表结构完全一致，避免手动改的字段与生成结果有偏差。
+
+这条流程也适用于新增整张表：先手动建一个最简 model struct 顶过编译，等 ALTER / CREATE 在数据库落地后再用 `gen:model` 覆盖刷新。
+
 ### 分层约束
 | 目录 | 职责 | 禁止 |
 |---|---|---|

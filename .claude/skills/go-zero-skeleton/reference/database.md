@@ -13,6 +13,22 @@
 2. 对已运行的库，也可直接在 MySQL 中执行 DDL，或手动重建：`docker compose down -v && docker compose up -d --build`（`-v` 会清空数据卷，谨慎使用）。
 3. 执行 `go run cmd/main.go gen:model` 生成代码。
 
+## 字段变更流程（强制，详见 SKILL.md）
+
+**新增 / 修改数据库字段时，必须先改库再重生成 model，最后写业务代码。** 原因：`gen:model` 通过 `go run cmd/main.go` 执行，如果业务代码先引用了不存在的字段，编译报错 → 连 `gen:model` 都跑不起来，形成死锁。
+
+### 标准步骤
+
+1. 产出 ALTER 语句，开发者在数据库中执行（或补进 `.github/init.sql` 后重建库）。
+2. 运行 `go run cmd/main.go gen:model`（或 `gen:model <表名>`）刷新 `app/dao/model/` 和 `app/dao/query/`。
+3. 再写 service / controller / types 中的业务逻辑。
+
+### 变通：先手动补 model 结构体
+
+如果确实想先推进代码（改动小、希望一次性提），可以**只手动改 `app/dao/model/` 下对应表的 struct**（加字段、补 gorm 标签、类型与数据库一致），让编译通过，业务代码先行。**不要手动改 `app/dao/query/`**，查询方法由 gen 批量生成，手动维护极易出错。
+
+收尾时必须提醒开发者：数据库执行完 ALTER 后，运行一次 `go run cmd/main.go gen:model` 覆盖刷新，确保生成产物与表结构完全一致。
+
 ## 软删除（强制）
 
 **禁止物理删除业务数据**。有删除需求的表一律增加 `is_deleted` 字段：删除 = 将该行 `is_deleted` 置 `1`（软删），查询活跃数据默认先过滤 `is_deleted = 0`。严禁 Gorm `Delete` / `Unscoped().Delete` / 手写 `DELETE FROM ...` / `TRUNCATE`（相关强制约定与常量模板见 SKILL.md「MySQL 软删除」，本节给具体写法）。
