@@ -20,6 +20,7 @@ func NewGormLogger() *GormLogger {
 
 	l.LogLevel = gl.Info
 	l.Colorful = false
+	l.SlowThreshold = 500 * time.Millisecond
 
 	return l
 }
@@ -77,9 +78,9 @@ func (l *GormLogger) Trace(ctx context.Context, begin time.Time, fc func() (sql 
 	case l.LogLevel == gl.Info:
 		sql, rows := fc()
 		if rows == -1 {
-			l.log(ctx).Errorf("%s [%.3fms] [rows:%v] %s", utils.FileWithLineNum(), float64(elapsed.Nanoseconds())/1e6, "-", sql)
+			l.log(ctx).Infof("%s [%.3fms] [rows:%v] %s", utils.FileWithLineNum(), float64(elapsed.Nanoseconds())/1e6, "-", sql)
 		} else {
-			l.log(ctx).Errorf("%s [%.3fms] [rows:%v] %s", utils.FileWithLineNum(), float64(elapsed.Nanoseconds())/1e6, rows, sql)
+			l.log(ctx).Infof("%s [%.3fms] [rows:%v] %s", utils.FileWithLineNum(), float64(elapsed.Nanoseconds())/1e6, rows, sql)
 		}
 	}
 }
